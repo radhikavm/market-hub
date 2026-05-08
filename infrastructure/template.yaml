@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: market-hub backend - Lambda functions + HTTP API Gateway
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 256
+    Environment:
+      Variables:
+        NODE_ENV: production
+
+Resources:
+
+  MarketHubApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Description: market-hub HTTP API
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+
+  GitHubReposFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: market-hub-github-repos
+      CodeUri: ../backend/functions/github-repos/
+      Handler: index.handler
+      Description: Fetches top GitHub repositories via GitHub REST API
+      Environment:
+        Variables:
+          GITHUB_TOKEN: !Ref GitHubToken
+      Events:
+        GetRepos:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MarketHubApi
+            Path: /github-repos
+            Method: GET
+
+  AsxEquitiesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: market-hub-asx-equities
+      CodeUri: ../backend/functions/asx-equities/
+      Handler: index.handler
+      Description: Fetches top ASX equities via yahoo-finance2
+      Events:
+        GetEquities:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref MarketHubApi
+            Path: /asx-equities
+            Method: GET
+
+Parameters:
+  GitHubToken:
+    Type: String
+    Default: ""
+    Description: Optional GitHub personal access token to raise API rate limit
+
+Outputs:
+  ApiBaseUrl:
+    Description: API Gateway base URL
+    Value: !Sub "https://${MarketHubApi}.execute-api.${AWS::Region}.amazonaws.com"
+  GitHubReposEndpoint:
+    Description: GitHub repos endpoint
+    Value: !Sub "https://${MarketHubApi}.execute-api.${AWS::Region}.amazonaws.com/github-repos"
+  AsxEquitiesEndpoint:
+    Description: ASX equities endpoint
+    Value: !Sub "https://${MarketHubApi}.execute-api.${AWS::Region}.amazonaws.com/asx-equities"

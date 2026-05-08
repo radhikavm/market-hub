@@ -1,0 +1,6 @@
+[default.deploy.parameters]
+stack_name = "market-hub"
+region = "ap-southeast-2"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+resolve_s3 = true
